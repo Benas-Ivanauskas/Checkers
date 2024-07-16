@@ -3,9 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkers Game</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="script.js" defer></script>
-    <title>Checkers game</title>
   </head>
-  <body></body>
+  <body>
+    <div class="board-page">
+      <h1>Welcome to the Checker game!</h1>
+      <div id="board"></div>
+      <div id="status"></div>
+      <div id="last-move-timestamp"></div>
+      <div class="game-over">
+        <button id="new-game-btn">New Game</button>
+        <button id="play-again-btn" style="display: none">Play Again</button>
+      </div>
+    </div>
+  </body>
 </html>
