@@ -4,10 +4,12 @@ let currentPlayer = "black";
 let selectedPiece = null;
 let gameId = null; // To store the current game ID
 let moveNumber = 0;
+let gameEnded = false;
 
 // Function to create a new game
 async function createNewGame() {
   try {
+    gameEnded = false;
     moveNumber = 0;
     currentPlayer = "black";
     const response = await fetch(`${baseUrl}`, {
@@ -72,6 +74,10 @@ async function fetchGameById(gameId) {
     moveNumber = data.board.move_number || 0;
 
     initializeCheckersBoard(boardState);
+
+    if (data.game.timestamp) {
+      displayLastMoveTimestamp(data.game.timestamp);
+    }
     return data;
   } catch (error) {
     console.error("Error fetching game:", error);
@@ -166,6 +172,7 @@ function createPiece(color) {
 // Function to add click listener to a piece
 function addPieceClickListener(piece) {
   piece.addEventListener("click", function () {
+    if (gameEnded) return; // Don't allow moves if the game has ended
     if (piece.classList.contains(currentPlayer)) {
       if (selectedPiece) {
         selectedPiece.classList.remove("selected");
@@ -191,17 +198,38 @@ function displayAvailableMoves() {
     ? [1, -1]
     : [color === "black" ? 1 : -1];
 
-  direction.forEach((dir) => {
-    checkDiagonalMove(row, col, row + dir, col - 1, color);
-    checkDiagonalMove(row, col, row + dir, col + 1, color);
-  });
+  let jumpMoveAvailable = false;
 
   direction.forEach((dir) => {
-    checkJumpMove(row, col, row + dir, col - 1, row + 2 * dir, col - 2, color);
-    checkJumpMove(row, col, row + dir, col + 1, row + 2 * dir, col + 2, color);
+    jumpMoveAvailable =
+      checkJumpMove(
+        row,
+        col,
+        row + dir,
+        col - 1,
+        row + 2 * dir,
+        col - 2,
+        color
+      ) || jumpMoveAvailable;
+    jumpMoveAvailable =
+      checkJumpMove(
+        row,
+        col,
+        row + dir,
+        col + 1,
+        row + 2 * dir,
+        col + 2,
+        color
+      ) || jumpMoveAvailable;
   });
 
-  // Check for no moves left for the current player
+  if (!jumpMoveAvailable) {
+    direction.forEach((dir) => {
+      checkDiagonalMove(row, col, row + dir, col - 1, color);
+      checkDiagonalMove(row, col, row + dir, col + 1, color);
+    });
+  }
+
   if (!hasValidMove(color)) {
     const statusElement = document.getElementById("status");
     const winner = currentPlayer === "black" ? "White" : "Black";
@@ -253,12 +281,107 @@ function checkJumpMove(
     ) {
       targetSquare.classList.add("highlight");
       targetSquare.addEventListener("click", function () {
-        const jumpedPiece = enemySquare.children[0];
-        enemySquare.removeChild(jumpedPiece);
-        movePiece(row, col, targetRow, targetCol);
+        performJump(row, col, enemyRow, enemyCol, targetRow, targetCol);
       });
+      return true;
     }
   }
+  return false;
+}
+
+function performJump(
+  startRow,
+  startCol,
+  enemyRow,
+  enemyCol,
+  targetRow,
+  targetCol
+) {
+  const startSquare = document.querySelector(
+    `.square[data-row='${startRow}'][data-col='${startCol}']`
+  );
+  const enemySquare = document.querySelector(
+    `.square[data-row='${enemyRow}'][data-col='${enemyCol}']`
+  );
+  const targetSquare = document.querySelector(
+    `.square[data-row='${targetRow}'][data-col='${targetCol}']`
+  );
+
+  const jumpingPiece = startSquare.children[0];
+  const capturedPiece = enemySquare.children[0];
+
+  targetSquare.appendChild(jumpingPiece);
+  enemySquare.removeChild(capturedPiece);
+
+  checkKingPromotion(jumpingPiece, targetRow);
+
+  // Check for additional jumps
+  const color = jumpingPiece.classList.contains("black") ? "black" : "white";
+  const direction = jumpingPiece.classList.contains("king")
+    ? [1, -1]
+    : [color === "black" ? 1 : -1];
+
+  let additionalJumpAvailable = false;
+
+  direction.forEach((dir) => {
+    additionalJumpAvailable =
+      checkJumpMove(
+        targetRow,
+        targetCol,
+        targetRow + dir,
+        targetCol - 1,
+        targetRow + 2 * dir,
+        targetCol - 2,
+        color
+      ) || additionalJumpAvailable;
+    additionalJumpAvailable =
+      checkJumpMove(
+        targetRow,
+        targetCol,
+        targetRow + dir,
+        targetCol + 1,
+        targetRow + 2 * dir,
+        targetCol + 2,
+        color
+      ) || additionalJumpAvailable;
+  });
+
+  if (!additionalJumpAvailable) {
+    endTurn();
+  }
+}
+
+function checkKingPromotion(piece, row) {
+  if (
+    (piece.classList.contains("black") && row === 7) ||
+    (piece.classList.contains("white") && row === 0)
+  ) {
+    piece.classList.add("king");
+    if (piece.classList.contains("black")) {
+      piece.style.backgroundColor = "red";
+    } else if (piece.classList.contains("white")) {
+      piece.style.backgroundColor = "gold";
+    }
+  }
+}
+
+function endTurn() {
+  selectedPiece.classList.remove("selected");
+  selectedPiece = null;
+  clearHighlights();
+  removeAllSquareListeners();
+  switchTurn();
+  updateStatus();
+  initializePieceEventListeners();
+  moveNumber++;
+
+  updateGame(gameId, getBoardState(), currentPlayer, moveNumber)
+    .then((updateGameStateOnTheServer) => {
+      displayLastMoveTimestamp(updateGameStateOnTheServer.game.timestamp);
+    })
+    .catch((error) => {
+      console.error("Error updating game and displaying timestamp:", error);
+    });
 }
 
 // Function to validate a move
@@ -296,12 +419,12 @@ function isValidJump(enemyRow, enemyCol, targetRow, targetCol, color) {
 }
 
 // Function to move the piece to the target position
-async function movePiece(startRow, startCol, targetRow, targetCol) {
+function movePiece(startRow, startCol, targetRow, targetCol) {
+  if (gameEnded) return;
   const startSquare = document.querySelector(
     `.square[data-row='${startRow}'][data-col='${startCol}']`
   );
   const pieceToMove = startSquare.children[0];
-
   const targetSquare = document.querySelector(
     `.square[data-row='${targetRow}'][data-col='${targetCol}']`
   );
@@ -311,45 +434,8 @@ async function movePiece(startRow, startCol, targetRow, targetCol) {
   }
 
   targetSquare.appendChild(pieceToMove);
-
-  // Check if the piece becomes a king
-  if (
-    (pieceToMove.classList.contains("black") && targetRow === 7) ||
-    (pieceToMove.classList.contains("white") && targetRow === 0)
-  ) {
-    pieceToMove.classList.add("king");
-    if (pieceToMove.classList.contains("black")) {
-      pieceToMove.style.backgroundColor = "red"; // Change black to red for kings
-    } else if (pieceToMove.classList.contains("white")) {
-      pieceToMove.style.backgroundColor = "gold"; // Change white to gold for kings
-    }
-  }
-
-  selectedPiece.classList.remove("selected");
-  selectedPiece = null;
-
-  clearHighlights();
-  removeAllSquareListeners(); // Remove all square event listeners after move
-  switchTurn();
-  updateStatus();
-  initializePieceEventListeners(); // Re-initialize piece event listeners after move
-  moveNumber++;
-
-  try {
-    // Update the game state on the server and get the timestamp of the move
-    const updateGameStateOnTheServer = await updateGame(
-      gameId,
-      getBoardState(),
-      currentPlayer,
-      moveNumber
-    );
-
-    displayLastMoveTimestamp(updateGameStateOnTheServer.game.timestamp);
-    //CIA VISISKAI NEREIKALINGA ATRODO BET NEBEISMETE WHO WON THE GAME! checkint
-  } catch (error) {
-    console.error("Error updating game and displaying timestamp:", error);
-    // Handle error accordingly
-  }
+  checkKingPromotion(pieceToMove, targetRow);
+  endTurn();
 }
 function handleSquareClick() {
   const targetSquare = this; // `this` refers to the clicked square
@@ -499,27 +585,32 @@ function checkWinner(boardState) {
 
   const statusElement = document.getElementById("status");
   const playAgainButton = document.getElementById("play-again-btn");
+  const newGameButton = document.getElementById("new-game-btn");
 
   if (blackPiecesLeft === 0) {
     statusElement.innerHTML = "White wins! No black checkers left.";
+    gameEnded = true;
     playAgainButton.style.display = "block";
+    newGameButton.style.display = "none";
   } else if (whitePiecesLeft === 0) {
     statusElement.innerHTML = "Black wins! No white checkers left.";
+    gameEnded = true;
     playAgainButton.style.display = "block";
+    newGameButton.style.display = "none";
   } else if (!hasValidMove("black")) {
     statusElement.innerHTML = "White wins! No moves left for black.";
+    gameEnded = true;
     playAgainButton.style.display = "block";
+    newGameButton.style.display = "none";
   } else if (!hasValidMove("white")) {
     statusElement.innerHTML = "Black wins! No moves left for white.";
+    gameEnded = true;
     playAgainButton.style.display = "block";
+    newGameButton.style.display = "none";
   } else {
-    playAgainButton.style.display = "none"; // Hide button if no winner
+    playAgainButton.style.display = "none";
+    newGameButton.style.display = "block";
   }
-
-  // Hide the New Game button when the game is won
-  // const newGameButton = document.getElementById("new-game-btn");
-  // newGameButton.style.display = "none";
-  // maybe not need NEED TO THINK
 }
 
 // Function to display the timestamp of the last move
@@ -537,6 +628,7 @@ playAgainButton.addEventListener("click", function () {
   currentPlayer = "black";
   selectedPiece = null;
   gameId = null;
+  gameEnded = false;
 
   // Clear board and start a new game
   const checkerBoard = document.getElementById("board");
