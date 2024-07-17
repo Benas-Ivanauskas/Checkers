@@ -71,12 +71,6 @@ const updateGameBoardState = async (req, res) => {
   const { id } = req.params;
   const { board_state, current_turn, move_number } = req.body;
 
-  console.log(`Attempting to update game ${id} with:`, {
-    board_state: JSON.stringify(board_state),
-    current_turn,
-    move_number,
-  });
-
   try {
     // Update game turn
     const gameResult = await pool.query(
@@ -85,24 +79,15 @@ const updateGameBoardState = async (req, res) => {
     );
 
     if (gameResult.rows.length === 0) {
-      console.log(`Game ${id} not found`);
       return res.status(404).json({ error: "Game not found" });
     }
 
-    console.log(`Game ${id} turn updated to ${current_turn}`);
-
     // Insert new board state
-    console.log(
-      `Inserting new board state for game ${id}:`,
-      JSON.stringify(board_state)
-    );
     const boardResult = await pool.query(queries.insertIntoBoards, [
       id,
       board_state,
       move_number,
     ]);
-
-    console.log(`Board insertion result:`, boardResult);
 
     if (boardResult.rowCount === 0) {
       console.error(
@@ -112,17 +97,11 @@ const updateGameBoardState = async (req, res) => {
       return res.status(500).json({ error: "Failed to update board state" });
     }
 
-    console.log(
-      `New board state inserted for game ${id}, move number ${move_number}`
-    );
-
     res.json({
       game: gameResult.rows[0],
       board: boardResult.rows[0],
     });
   } catch (err) {
-    console.error(`Error updating game ${id}:`, err);
-    console.error(`Error details:`, err.stack);
     res.status(500).json({ error: err.message });
   }
 };
