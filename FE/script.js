@@ -1,10 +1,25 @@
-// Define currentPlayer globally
+//Global variables and Constantcs
 const baseUrl = "http://localhost:3000/api/games";
 let currentPlayer = "black";
 let selectedPiece = null;
-let gameId = null; // To store the current game ID
+let gameId = null;
 let moveNumber = 0;
 let gameEnded = false;
+
+//2. Game Initialiazation
+async function initializeGame() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlGameId = urlParams.get("gameId");
+
+  if (urlGameId) {
+    gameId = urlGameId;
+    await fetchGameById(gameId);
+  } else {
+    await createNewGame();
+  }
+}
+
+//3. API Interactions
 
 // Function to create a new game
 async function createNewGame() {
@@ -23,14 +38,8 @@ async function createNewGame() {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to create game");
-    }
-
     const data = await response.json();
-    console.log("New game created:", data);
 
-    // Store the game ID globally
     gameId = data.game.id;
 
     initializeCheckersBoard(data.board.board_state.board);
@@ -50,18 +59,9 @@ async function fetchGameById(gameId) {
   try {
     const response = await fetch(`${baseUrl}/${gameId}`);
 
-    if (!response.ok) {
-      throw new Error("Game not found");
-    }
-
     const data = await response.json();
-    console.log("Game data:", data);
 
-    // Update the currentPlayer based on fetched game data
     currentPlayer = data.game.current_turn;
-
-    // Store the game ID globally
-    gameId = data.game.id;
 
     // Handle response and update UI accordingly (I think here is bug with board.board_status.board and board.board_status save different and he dont undersntand so i used if with with these variants)
     let boardState;
@@ -71,12 +71,14 @@ async function fetchGameById(gameId) {
       boardState = data.board.board_state;
     }
 
-    moveNumber = data.board.move_number || 0;
+    moveNumber = data.board.move_number;
 
     initializeCheckersBoard(boardState);
 
     if (data.game.timestamp) {
-      displayLastMoveTimestamp(data.game.timestamp);
+      displayLastMoveTimestamp(
+        data.game.timestamp
+      ); /*Kartojasi kodas DRY method*/
     }
     return data;
   } catch (error) {
@@ -100,12 +102,6 @@ async function updateGame(id, boardState, currentTurn, moveNumber) {
       }),
     });
 
-    if (!response.ok) {
-      throw new Error(
-        `Failed to update game (${response.status}): ${await response.text()}`
-      );
-    }
-
     const data = await response.json();
     console.log("Game updated successfully:", data);
 
@@ -113,18 +109,13 @@ async function updateGame(id, boardState, currentTurn, moveNumber) {
     checkWinner(boardState);
 
     // Return the timestamp of the last move from the server response
-    return data; // Assuming 'data.board.timestamp' is in '2024-07-14T15:47:07.201Z' format
+    return data;
   } catch (error) {
     console.error("There was a problem updating the game:", error);
-    // Handle specific error cases if needed
-    if (error.message.includes("Failed to update game")) {
-      // Handle specific error cases or show user-friendly message
-    } else {
-      // Handle other errors or show generic message
-    }
   }
 }
 
+//4. Board setup and Piece Movement
 // Initialize the checkers board with pieces
 function initializeCheckersBoard(boardState) {
   const checkerBoard = document.getElementById("board");
@@ -147,7 +138,6 @@ function initializeCheckersBoard(boardState) {
 
       // Add pieces based on boardState
       const pieceColor = boardState[row][col];
-
       if (pieceColor) {
         const piece = createPiece(pieceColor);
         square.appendChild(piece);
@@ -172,7 +162,7 @@ function createPiece(color) {
 // Function to add click listener to a piece
 function addPieceClickListener(piece) {
   piece.addEventListener("click", function () {
-    if (gameEnded) return; // Don't allow moves if the game has ended
+    if (gameEnded) return;
     if (piece.classList.contains(currentPlayer)) {
       if (selectedPiece) {
         selectedPiece.classList.remove("selected");
@@ -184,8 +174,127 @@ function addPieceClickListener(piece) {
   });
 }
 
-// Function to display available moves for selected piece
+// Function to move the piece to the target position
+function movePiece(startRow, startCol, targetRow, targetCol) {
+  if (gameEnded) return;
+  const startSquare = document.querySelector(
+    `.square[data-row='${startRow}'][data-col='${startCol}']`
+  );
+  console.log(startSquare);
+  const pieceToMove = startSquare.children[0];
+  const targetSquare = document.querySelector(
+    `.square[data-row='${targetRow}'][data-col='${targetCol}']`
+  );
 
+  if (targetSquare.children.length > 0) {
+    return;
+  }
+
+  targetSquare.appendChild(pieceToMove);
+  checkKingPromotion(pieceToMove, targetRow);
+  endTurn();
+}
+
+function handleSquareClick() {
+  const targetSquare = this; // `this` refers to the clicked square
+  const targetRow = parseInt(targetSquare.dataset.row);
+  const targetCol = parseInt(targetSquare.dataset.col);
+  movePiece(
+    selectedPiece.parentElement.dataset.row,
+    selectedPiece.parentElement.dataset.col,
+    targetRow,
+    targetCol
+  );
+}
+
+function performJump(
+  startRow,
+  startCol,
+  enemyRow,
+  enemyCol,
+  targetRow,
+  targetCol
+) {
+  const startSquare = document.querySelector(
+    `.square[data-row='${startRow}'][data-col='${startCol}']`
+  );
+  const enemySquare = document.querySelector(
+    `.square[data-row='${enemyRow}'][data-col='${enemyCol}']`
+  );
+  const targetSquare = document.querySelector(
+    `.square[data-row='${targetRow}'][data-col='${targetCol}']`
+  );
+
+  const jumpingPiece = startSquare.children[0];
+  const capturedPiece = enemySquare.children[0];
+
+  targetSquare.appendChild(jumpingPiece);
+  enemySquare.removeChild(capturedPiece);
+
+  checkKingPromotion(jumpingPiece, targetRow);
+
+  // Check for additional jumps
+  const color = jumpingPiece.classList.contains("black") ? "black" : "white";
+  const direction = jumpingPiece.classList.contains("king")
+    ? [1, -1]
+    : [color === "black" ? 1 : -1];
+
+  let additionalJumpAvailable = false;
+
+  direction.forEach((dir) => {
+    additionalJumpAvailable =
+      checkJumpMove(
+        targetRow,
+        targetCol,
+        targetRow + dir,
+        targetCol - 1,
+        targetRow + 2 * dir,
+        targetCol - 2,
+        color
+      ) || additionalJumpAvailable;
+    additionalJumpAvailable =
+      checkJumpMove(
+        targetRow,
+        targetCol,
+        targetRow + dir,
+        targetCol + 1,
+        targetRow + 2 * dir,
+        targetCol + 2,
+        color
+      ) || additionalJumpAvailable;
+  });
+
+  if (!additionalJumpAvailable) {
+    endTurn();
+  }
+}
+
+// Function to get the current board state
+function getBoardState() {
+  const boardState = [];
+  const squares = document.querySelectorAll(".square");
+
+  for (let row = 0; row < 8; row++) {
+    boardState[row] = [];
+    for (let col = 0; col < 8; col++) {
+      const square = squares[row * 8 + col];
+      if (square.children.length > 0) {
+        const color = square.children[0].classList.contains("black")
+          ? "black"
+          : "white";
+        boardState[row][col] = color;
+      } else {
+        boardState[row][col] = null;
+      }
+    }
+  }
+
+  return boardState;
+}
+
+//5. Game Logic
+
+// Function to display available moves for selected piece
 function displayAvailableMoves() {
   const squares = document.querySelectorAll(".square");
   squares.forEach((square) => square.classList.remove("highlight"));
@@ -289,68 +398,6 @@ function checkJumpMove(
   return false;
 }
 
-function performJump(
-  startRow,
-  startCol,
-  enemyRow,
-  enemyCol,
-  targetRow,
-  targetCol
-) {
-  const startSquare = document.querySelector(
-    `.square[data-row='${startRow}'][data-col='${startCol}']`
-  );
-  const enemySquare = document.querySelector(
-    `.square[data-row='${enemyRow}'][data-col='${enemyCol}']`
-  );
-  const targetSquare = document.querySelector(
-    `.square[data-row='${targetRow}'][data-col='${targetCol}']`
-  );
-
-  const jumpingPiece = startSquare.children[0];
-  const capturedPiece = enemySquare.children[0];
-
-  targetSquare.appendChild(jumpingPiece);
-  enemySquare.removeChild(capturedPiece);
-
-  checkKingPromotion(jumpingPiece, targetRow);
-
-  // Check for additional jumps
-  const color = jumpingPiece.classList.contains("black") ? "black" : "white";
-  const direction = jumpingPiece.classList.contains("king")
-    ? [1, -1]
-    : [color === "black" ? 1 : -1];
-
-  let additionalJumpAvailable = false;
-
-  direction.forEach((dir) => {
-    additionalJumpAvailable =
-      checkJumpMove(
-        targetRow,
-        targetCol,
-        targetRow + dir,
-        targetCol - 1,
-        targetRow + 2 * dir,
-        targetCol - 2,
-        color
-      ) || additionalJumpAvailable;
-    additionalJumpAvailable =
-      checkJumpMove(
-        targetRow,
-        targetCol,
-        targetRow + dir,
-        targetCol + 1,
-        targetRow + 2 * dir,
-        targetCol + 2,
-        color
-      ) || additionalJumpAvailable;
-  });
-
-  if (!additionalJumpAvailable) {
-    endTurn();
-  }
-}
-
 function checkKingPromotion(piece, row) {
   if (
     (piece.classList.contains("black") && row === 7) ||
@@ -416,66 +463,6 @@ function isValidJump(enemyRow, enemyCol, targetRow, targetCol, color) {
     );
   }
   return false;
-}
-
-// Function to move the piece to the target position
-function movePiece(startRow, startCol, targetRow, targetCol) {
-  if (gameEnded) return;
-  const startSquare = document.querySelector(
-    `.square[data-row='${startRow}'][data-col='${startCol}']`
-  );
-  const pieceToMove = startSquare.children[0];
-  const targetSquare = document.querySelector(
-    `.square[data-row='${targetRow}'][data-col='${targetCol}']`
-  );
-
-  if (targetSquare.children.length > 0) {
-    return;
-  }
-
-  targetSquare.appendChild(pieceToMove);
-  checkKingPromotion(pieceToMove, targetRow);
-  endTurn();
-}
-function handleSquareClick() {
-  const targetSquare = this; // `this` refers to the clicked square
-  const targetRow = parseInt(targetSquare.dataset.row);
-  const targetCol = parseInt(targetSquare.dataset.col);
-  movePiece(
-    selectedPiece.parentElement.dataset.row,
-    selectedPiece.parentElement.dataset.col,
-    targetRow,
-    targetCol
-  );
-}
-
-// Function to get the current board state
-function getBoardState() {
-  const boardState = [];
-  const squares = document.querySelectorAll(".square");
-
-  for (let row = 0; row < 8; row++) {
-    boardState[row] = [];
-    for (let col = 0; col < 8; col++) {
-      const square = squares[row * 8 + col];
-      if (square.children.length > 0) {
-        const color = square.children[0].classList.contains("black")
-          ? "black"
-          : "white";
-        boardState[row][col] = color;
-      } else {
-        boardState[row][col] = null;
-      }
-    }
-  }
-
-  return boardState;
-}
-
-// Function to update current turn status
-function updateStatus() {
-  const statusElement = document.getElementById("status");
-  statusElement.innerHTML = `Current turn: ${currentPlayer.toUpperCase()}`;
 }
 
 // Function to check for valid game board square
@@ -613,11 +600,18 @@ function checkWinner(boardState) {
   }
 }
 
+//6. UI Updates
+
+// Function to update current turn status
+function updateStatus() {
+  const statusElement = document.getElementById("status");
+  statusElement.innerHTML = `Current turn: ${currentPlayer.toUpperCase()}`;
+}
+
 // Function to display the timestamp of the last move
 function displayLastMoveTimestamp(timestamp) {
   const lastMoveElement = document.getElementById("last-move-timestamp");
   const formattedTimestamp = new Date(timestamp).toLocaleString();
-  console.log(formattedTimestamp);
   lastMoveElement.textContent = `Last move made at: ${formattedTimestamp}`;
 }
 
@@ -629,6 +623,10 @@ playAgainButton.addEventListener("click", function () {
   selectedPiece = null;
   gameId = null;
   gameEnded = false;
+
+  //Clear timestamp
+  const timestamp = document.getElementById("last-move-timestamp");
+  timestamp.innerHTML = "";
 
   // Clear board and start a new game
   const checkerBoard = document.getElementById("board");
@@ -660,16 +658,5 @@ function displayErrorMessage(message) {
   boardElement.appendChild(errorMessageElement);
 }
 
-async function initializeGame() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlGameId = urlParams.get("gameId");
-
-  if (urlGameId) {
-    gameId = urlGameId;
-    await fetchGameById(gameId);
-  } else {
-    await createNewGame();
-  }
-}
-
+//7. Main execution
 initializeGame();
