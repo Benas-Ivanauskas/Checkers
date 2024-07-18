@@ -101,15 +101,19 @@ body {
 }
 
 #new-game-btn,
-#play-again-btn {
+#play-again-btn,
+#submitBtn {
   cursor: pointer;
-  width: 150px;
-  height: 50px;
-  font-size: 1.4em;
   border-radius: 5px;
   border: 3px solid var(--black);
   margin-bottom: 20px;
   font-weight: bold;
+}
+#new-game-btn,
+#play-again-btn {
+  width: 150px;
+  height: 50px;
+  font-size: 1.4em;
 }
 
 .game-over {
@@ -122,4 +126,31 @@ body {
   justify-content: center;
   width: 100%;
   font-size: 1.5em;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+form label {
+  font-size: 1.5em;
+  margin-right: 30px;
+}
+
+.currentGameId {
+  font-weight: bold;
+}
+
+#inputId {
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 1em;
+  outline: none;
+  border: none;
+}
+
+#submitBtn {
+  width: 100px;
+  height: 38px;
+  font-size: 1.2em;
 }
