@@ -39,9 +39,8 @@ async function createNewGame() {
     });
 
     const data = await response.json();
-
     gameId = data.game.id;
-
+    displayGameId(gameId);
     initializeCheckersBoard(data.board.board_state.board);
 
     // Update URL with game ID without reloading the page
@@ -61,7 +60,19 @@ async function fetchGameById(gameId) {
 
     const data = await response.json();
 
+    if (!response.ok) {
+      if (response.status === 404) {
+        displayErrorMessage("No such data game ID. Go back to current game!");
+      } else {
+        displayErrorMessage(
+          "Sorry, there was a problem loading the game data."
+        );
+      }
+      return;
+    }
+
     currentPlayer = data.game.current_turn;
+    moveNumber = data.board.move_number;
 
     // Handle response and update UI accordingly (I think here is bug with board.board_status.board and board.board_status save different and he dont undersntand so i used if with with these variants)
     let boardState;
@@ -71,8 +82,7 @@ async function fetchGameById(gameId) {
       boardState = data.board.board_state;
     }
 
-    moveNumber = data.board.move_number;
-
+    displayGameId(gameId);
     initializeCheckersBoard(boardState);
 
     if (data.game.timestamp) {
@@ -103,7 +113,6 @@ async function updateGame(id, boardState, currentTurn, moveNumber) {
     });
 
     const data = await response.json();
-    console.log("Game updated successfully:", data);
 
     // Check for winner when game is updated
     checkWinner(boardState);
@@ -180,7 +189,6 @@ function movePiece(startRow, startCol, targetRow, targetCol) {
   const startSquare = document.querySelector(
     `.square[data-row='${startRow}'][data-col='${startCol}']`
   );
-  console.log(startSquare);
   const pieceToMove = startSquare.children[0];
   const targetSquare = document.querySelector(
     `.square[data-row='${targetRow}'][data-col='${targetCol}']`
@@ -656,6 +664,21 @@ function displayErrorMessage(message) {
   errorMessageElement.classList.add("error-message");
   errorMessageElement.textContent = message;
   boardElement.appendChild(errorMessageElement);
+}
+
+function displayGameId(gameId) {
+  const id = document.querySelector(".currentGameId");
+  id.textContent = gameId;
+}
+
+function handleSubmitForm() {
+  const inputId = document.getElementById("inputId");
+  const inputIdValue = inputId.value;
+
+  if (inputIdValue) {
+    fetchGameById(inputIdValue);
+    inputId.value = "";
+  }
 }
 
 //7. Main execution
