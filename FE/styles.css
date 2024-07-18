@@ -5,6 +5,18 @@ body {
   background-image: url("./img/wood.jpg");
   background-position: center;
   color: white;
+  font-size: 16px;
+}
+
+:root {
+  --light-brown: #683511;
+  --dark-brown: #f1d4ac;
+  --black: black;
+  --white: #fff;
+  --yellow: yellow;
+  --highlight-grren: rgb(81, 110, 81);
+  --gold: gold;
+  --red: rgb(160, 3, 3);
 }
 
 .board-page {
@@ -35,11 +47,11 @@ body {
 }
 
 .light-brown {
-  background-color: #683511;
+  background-color: var(--light-brown);
 }
 
 .dark-brown {
-  background-color: #f1d4ac;
+  background-color: var(--dark-brown);
 }
 
 .piece {
@@ -50,26 +62,26 @@ body {
 }
 
 .black {
-  background-color: black;
+  background-color: var(--black);
 }
 
 .white {
-  background-color: white;
+  background-color: var(--white);
 }
 
 .selected {
-  border: 3px solid yellow;
+  border: 3px solid var(--yellow);
 }
 
 .highlight {
-  background-color: rgb(81, 110, 81);
+  background-color: var(--highlight-grren);
 }
 
 .gold {
-  background-color: gold;
+  background-color: var(--gold);
 }
 .red {
-  background-color: darkred;
+  background-color: var(--red);
 }
 
 .status-container {
@@ -83,7 +95,7 @@ body {
 
 #status,
 #last-move-timestamp {
-  font-size: 1.5rem;
+  font-size: 1.5em;
   font-weight: bold;
   padding: 7px 0;
 }
@@ -93,9 +105,9 @@ body {
   cursor: pointer;
   width: 150px;
   height: 50px;
-  font-size: 1.4rem;
+  font-size: 1.4em;
   border-radius: 5px;
-  border: 3px solid rgb(3, 3, 3);
+  border: 3px solid var(--black);
   margin-bottom: 20px;
   font-weight: bold;
 }
@@ -109,5 +121,5 @@ body {
   display: flex;
   justify-content: center;
   width: 100%;
-  font-size: 1.5rem;
+  font-size: 1.5em;
 }
