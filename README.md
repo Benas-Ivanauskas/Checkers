@@ -31,19 +31,24 @@ Backend
 ## Installation and Setup
 
 1. Clone the repository:
+- Create new folder on your system for the project.
+- Open Visual Studio Code and use the terminam to navigate to this folder.
+- Clone the repository using the following command:
 `git clone https://github.com/Benas-Ivanauskas/Checkers.git`
 2. Install dependencies:
-In the BE folder `npm install`
+- Navigate to the `BE` folder and isntall necessary dependencies `npm install`
 3. Set up envirnment variables:
-Create a `.env` file in the root directory and add the following:
+- In the `BE` folder, create a `.env` file in the root directory.
+- Add the following content to the `.env` file:
 `
 PORT=3000
 PASSWORD=your_postgres_password
 `
+- Replace `your_postgres_password` with your actual PostgreSQL password.
 5. Start the PostgreSQL database:
-Ensure you have PostgreSQL installed and running on your system.
+- Ensure PostgreSQL is installed and running on your system. You can download it from the PostgreSQL official website.
 6. Initialize the database:
-Run the SQL scripts to create the necessary tables:
+- Use a PostgreSQL client or command line tool to run the following SQL scripts to create the necessary tables:
 `
 CREATE TABLE games (
   id SERIAL PRIMARY KEY,
@@ -52,6 +57,8 @@ CREATE TABLE games (
   current_turn VARCHAR(10) NOT NULL,
   timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+`
+`
 CREATE TABLE boards (
   id SERIAL PRIMARY KEY,
   game_id INTEGER REFERENCES games(id) ON DELETE CASCADE,
@@ -61,9 +68,9 @@ CREATE TABLE boards (
 );
 `
 7. Start the server:
-`npm run server`
+- In the BE folder terminal, start the server with the following command: `npm run server`
 8. Open the frontend:
-Open the `index.html` file in a web browser or use a local development server like Live Server in Visual Studio Code.
+- Open the `index.html` file in a web browser or use a local development server like Live Server in Visual Studio Code.
 
 ## Docker Setup (Optional)
 
