@@ -1,16 +1,6 @@
 version: "3"
 
 services:
-  # Node.js application
-  app:
-    build: .
-    ports:
-      - "4000:3000"
-    depends_on:
-      - db
-    environment:
-      DATABASE_URL: postgres://postgre:$PASSWORD@db:5432/checkers
-
   # PostgreSQL database
   db:
     image: postgres:13
