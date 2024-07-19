@@ -4,8 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkers Game</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="script.js" defer></script>
+    <link rel="icon" href="img/checkers.jpg" type="image/jpg" />
+    <link rel="stylesheet" href="styles/styles.css" />
+    <script type="module" src="scripts/variables.js"></script>
+    <script type="module" src="scripts/initGame.js"></script>
+    <script type="module" src="scripts/board.js"></script>
+    <script type="module" src="scripts/gameLogic.js"></script>
+    <script type="module" src="scripts/ui.js"></script>
+    <script type="module" src="scripts/api.js"></script>
   </head>
   <body>
     <div class="board-page">
@@ -19,12 +25,7 @@
             min="0"
             placeholder="Insert last game ID"
           />
-          <input
-            id="submitBtn"
-            type="button"
-            value="Submit"
-            onclick="handleSubmitForm()"
-          />
+          <input type="button" id="submitBtn" value="Submit" />
         </form>
       </div>
       <div id="board"></div>
