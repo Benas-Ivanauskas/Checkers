@@ -26,39 +26,47 @@ function displayAvailableMoves() {
   const row = parseInt(selectedSquare.dataset.row);
   const col = parseInt(selectedSquare.dataset.col);
   const color = selectedPiece.classList.contains("black") ? "black" : "white";
-  const direction = selectedPiece.classList.contains("king")
-    ? [1, -1]
-    : [color === "black" ? 1 : -1];
+  const isKing = selectedPiece.classList.contains("king");
 
   let jumpMoveAvailable = false;
 
-  direction.forEach((dir) => {
+  // Define all possible directions for jumps
+  const jumpDirections = [
+    { rowDir: 1, colDir: -1 },
+    { rowDir: 1, colDir: 1 },
+    { rowDir: -1, colDir: -1 },
+    { rowDir: -1, colDir: 1 },
+  ];
+
+  // Check for jumps in all directions, including backward for regular pieces
+  jumpDirections.forEach(({ rowDir, colDir }) => {
     jumpMoveAvailable =
       checkJumpMove(
         row,
         col,
-        row + dir,
-        col - 1,
-        row + 2 * dir,
-        col - 2,
-        color
-      ) || jumpMoveAvailable;
-    jumpMoveAvailable =
-      checkJumpMove(
-        row,
-        col,
-        row + dir,
-        col + 1,
-        row + 2 * dir,
-        col + 2,
+        row + rowDir,
+        col + colDir,
+        row + 2 * rowDir,
+        col + 2 * colDir,
         color
       ) || jumpMoveAvailable;
   });
 
   if (!jumpMoveAvailable) {
-    direction.forEach((dir) => {
-      checkDiagonalMove(row, col, row + dir, col - 1, color);
-      checkDiagonalMove(row, col, row + dir, col + 1, color);
+    const moveDirections = isKing
+      ? jumpDirections
+      : color === "black"
+      ? [
+          { rowDir: 1, colDir: -1 },
+          { rowDir: 1, colDir: 1 },
+        ]
+      : [
+          { rowDir: -1, colDir: -1 },
+          { rowDir: -1, colDir: 1 },
+        ];
+
+    moveDirections.forEach(({ rowDir, colDir }) => {
+      checkDiagonalMove(row, col, row + rowDir, col + colDir, color);
     });
   }
 

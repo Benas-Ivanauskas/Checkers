@@ -4,7 +4,7 @@ const queries = require("../queries");
 
 const createNewGame = async (req, res) => {
   const { player_black_id, player_white_id } = req.body;
-  const currentTurn = "black";
+  const currentTurn = "white";
   const initialBoardState = gameInitilizeBoardState.initializeBoardState();
 
   try {

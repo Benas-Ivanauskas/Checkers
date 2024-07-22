@@ -18,7 +18,7 @@ async function createNewGame() {
   try {
     setGameEnded(false);
     setMoveNumber(0);
-    setCurrentPlayer("black");
+    setCurrentPlayer("white");
     const response = await fetch(`${baseUrl}`, {
       method: "POST",
       headers: {
