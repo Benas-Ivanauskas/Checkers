@@ -78,7 +78,8 @@ If you prefer to use Docker:
 
 1. Ensure Docker and Docker Compose are installed on your system.
 2. Build and run the containers:
-`docker-compose up --build`
+- Build Docker image from a Dockerfile `docker build -t checkers-game .`
+- Build images and start containers `docker-compose up`
 
 ## API Endpoints
 
