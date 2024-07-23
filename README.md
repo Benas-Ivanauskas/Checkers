@@ -17,12 +17,14 @@ This project is a full-stack web application that allows users to play Checkers 
 ## Technologies Used
 
 Frontend
+
 - HTML5
 - CSS3
 - Vanilla JavaScript
 - ES6 Modules
 
 Backend
+
 - Node.js
 - Express.js
 - PostgreSQL
@@ -31,63 +33,39 @@ Backend
 ## Installation and Setup
 
 1. Clone the repository:
-- Create new folder on your system for the project.
-- Open Visual Studio Code and use the terminam to navigate to this folder.
-- Clone the repository using the following command:
-`git clone https://github.com/Benas-Ivanauskas/Checkers.git`
+
+- Create new folder on your system for the project and open in Visual Studio Code.
+- Open current folder terminal and clone the repository using the following command:
+  `git clone https://github.com/Benas-Ivanauskas/Checkers.git`
+
 2. Install dependencies:
+
 - Navigate to the `BE` folder and isntall necessary dependencies `npm install`
-3. Set up envirnment variables:
-- In the `BE` folder, create a `.env` file in the root directory.
+
+3. Set up environment variables:
+
+- In the `BE` folder, create a `.env` file.
 - Add the following content to the `.env` file:
-`
-PORT=3000
-PASSWORD=your_postgres_password
-`
+
+  `PORT=3000
+DB_HOST=database
+DB_PORT=5432
+DB_USER=postgre
+DB_PASSWORD=your_postgres_password
+DB_NAME=saskes`
+
 - Replace `your_postgres_password` with your actual PostgreSQL password.
-5. Start the PostgreSQL database:
-- Ensure PostgreSQL is installed and running on your system. You can download it from the PostgreSQL official website.
-6. Initialize the database:
-- Use a PostgreSQL client or command line tool to run the following SQL scripts to create the necessary tables:
-`
-CREATE TABLE games (
-  id SERIAL PRIMARY KEY,
-  player_black_id VARCHAR(50) NOT NULL,
-  player_white_id VARCHAR(50) NOT NULL,
-  current_turn VARCHAR(10) NOT NULL,
-  timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-`
-`
-CREATE TABLE boards (
-  id SERIAL PRIMARY KEY,
-  game_id INTEGER REFERENCES games(id) ON DELETE CASCADE,
-  board_state JSONB NOT NULL,
-  move_number INTEGER NOT NULL,
-  timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-);
-`
-7. Start the server:
-- In the BE folder terminal, start the server with the following command: `npm run server`
-8. Open the frontend:
-- Open the `index.html` file in a web browser or use a local development server like Live Server in Visual Studio Code.
 
-## Docker Setup (Optional)
+4. Build Docker and start the containers:
 
-If you prefer to use Docker:
+- Once you have set up `.env` file, now you can build and start all services usding Docker Compose command : `docker-compose up`
 
-1. Ensure Docker and Docker Compose are installed on your system.
-2. Build and run the containers:
-- Build Docker image from a Dockerfile `docker build -t checkers-game .`
-- Build images and start containers `docker-compose up`
+5. Start the app:
+
+- You can open your app in web-browser using `http://localhost:4000` port.
 
 ## API Endpoints
 
 - `POST /api/games`: Create a new game
 - `GET /api/games/:id`: Get current game state by ID
 - `PUT /api/games/:id`: Update game state
-
-
-
-
-
