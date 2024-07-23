@@ -1,9 +1,9 @@
 -- Check if the database exists
-SELECT 'CREATE DATABASE checkersss'
-WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'checkersss')\gexec
+SELECT 'CREATE DATABASE saskes'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'saskes')\gexec
 
 -- Connect to the new database
-\c checkersss
+\c saskes
 
 -- Create games table if it does not exist
 CREATE TABLE IF NOT EXISTS games (

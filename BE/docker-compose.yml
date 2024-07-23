@@ -11,7 +11,7 @@ services:
       - "${PORT}:3000"
     environment:
       - PORT=${PORT}
-      - DB_HOST=${DB_HOST}
+      - DB_HOST=database
       - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -20,10 +20,13 @@ services:
       sh -c "npm install && node app.js"
     depends_on:
       - database
+    networks:
+      - my_network
 
   database:
     build:
       context: ./PostgreSQL
+      dockerfile: Dockerfile
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -32,6 +35,22 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - my_network
+
+  frontend:
+    build:
+      context: ../FE
+      dockerfile: Dockerfile
+    ports:
+      - "4000:80"
+    volumes:
+      - ../FE:/usr/share/nginx/html
+    networks:
+      - my_network
 
 volumes:
   pgdata:
+
+networks:
+  my_network:
