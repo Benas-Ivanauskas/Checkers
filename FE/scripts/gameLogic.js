@@ -64,9 +64,24 @@ function displayAvailableMoves() {
           { rowDir: -1, colDir: -1 },
           { rowDir: -1, colDir: 1 },
         ];
-
+    // Check for KING jumps in all directions
     moveDirections.forEach(({ rowDir, colDir }) => {
-      checkDiagonalMove(row, col, row + rowDir, col + colDir, color);
+      if (isKing) {
+        for (let i = 1; i < 8; i++) {
+          if (
+            !checkDiagonalMove(
+              row,
+              col,
+              row + i * rowDir,
+              col + i * colDir,
+              color
+            )
+          )
+            break;
+        }
+      } else {
+        checkDiagonalMove(row, col, row + rowDir, col + colDir);
+      }
     });
   }
 
@@ -87,8 +102,10 @@ function checkDiagonalMove(row, col, targetRow, targetCol) {
       targetSquare.addEventListener("click", function () {
         movePiece(row, col, targetRow, targetCol);
       });
+      return true;
     }
   }
+  return false;
 }
 
 function checkJumpMove(
@@ -110,6 +127,11 @@ function checkJumpMove(
     const targetSquare = document.querySelector(
       `.square[data-row='${targetRow}'][data-col='${targetCol}']`
     );
+    const piece = document.querySelector(
+      `.square[data-row='${row}'][data-col='${col}'] .piece`
+    );
+    const isKing = piece.classList.contains("king");
+
     if (
       enemySquare.children.length &&
       enemySquare.children[0].classList.contains(
@@ -117,11 +139,58 @@ function checkJumpMove(
       ) &&
       !targetSquare.children.length
     ) {
-      targetSquare.classList.add("highlight");
-      targetSquare.addEventListener("click", function () {
-        performJump(row, col, enemyRow, enemyCol, targetRow, targetCol);
-      });
-      return true;
+      if (isKing) {
+        const deltaRow = targetRow - row;
+        const deltaCol = targetCol - col;
+        const stepRow = deltaRow / Math.abs(deltaRow);
+        const stepCol = deltaCol / Math.abs(deltaCol);
+
+        let validJump = true;
+        let enemyFound = false;
+
+        for (let i = 1; i < Math.abs(deltaRow); i++) {
+          const intermediateRow = row + i * stepRow;
+          const intermediateCol = col + i * stepCol;
+          const intermediateSquare = document.querySelector(
+            `.square[data-row='${intermediateRow}'][data-col='${intermediateCol}']`
+          );
+
+          if (intermediateSquare.children.length > 0) {
+            if (intermediateSquare.children[0].classList.contains(color)) {
+              validJump = false;
+              break;
+            }
+            if (
+              intermediateSquare.children[0].classList.contains(
+                color === "black" ? "white" : "black"
+              )
+            ) {
+              if (enemyFound) {
+                validJump = false;
+                break;
+              }
+              enemyFound = true;
+            }
+          }
+        }
+
+        if (validJump && enemyFound) {
+          targetSquare.classList.add("highlight");
+          targetSquare.addEventListener("click", function () {
+            performJump(row, col, enemyRow, enemyCol, targetRow, targetCol);
+          });
+          return true;
+        }
+      } else if (
+        Math.abs(row - targetRow) === 2 &&
+        Math.abs(col - targetCol) === 2
+      ) {
+        targetSquare.classList.add("highlight");
+        targetSquare.addEventListener("click", function () {
+          performJump(row, col, enemyRow, enemyCol, targetRow, targetCol);
+        });
+        return true;
+      }
     }
   }
   return false;

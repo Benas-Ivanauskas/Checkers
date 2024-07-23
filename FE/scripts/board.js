@@ -6,7 +6,12 @@ import {
 } from "./variables.js";
 import { displayAvailableMoves } from "./gameLogic.js";
 import { updateStatus } from "./ui.js";
-import { checkKingPromotion, endTurn, checkJumpMove } from "./gameLogic.js";
+import {
+  checkKingPromotion,
+  endTurn,
+  checkJumpMove,
+  isValidSquare,
+} from "./gameLogic.js";
 
 function initializeCheckersBoard(boardState) {
   const checkerBoard = document.getElementById("board");
@@ -120,35 +125,53 @@ function performJump(
 
   checkKingPromotion(jumpingPiece, targetRow);
 
-  // Check for additional jumps
   const color = jumpingPiece.classList.contains("black") ? "black" : "white";
-  const direction = jumpingPiece.classList.contains("king")
-    ? [1, -1]
-    : [color === "black" ? 1 : -1];
+  const isKing = jumpingPiece.classList.contains("king");
+  const directions = [
+    { rowDir: 1, colDir: -1 },
+    { rowDir: 1, colDir: 1 },
+    { rowDir: -1, colDir: -1 },
+    { rowDir: -1, colDir: 1 },
+  ];
 
   let additionalJumpAvailable = false;
 
-  direction.forEach((dir) => {
-    additionalJumpAvailable =
-      checkJumpMove(
-        targetRow,
-        targetCol,
-        targetRow + dir,
-        targetCol - 1,
-        targetRow + 2 * dir,
-        targetCol - 2,
-        color
-      ) || additionalJumpAvailable;
-    additionalJumpAvailable =
-      checkJumpMove(
-        targetRow,
-        targetCol,
-        targetRow + dir,
-        targetCol + 1,
-        targetRow + 2 * dir,
-        targetCol + 2,
-        color
-      ) || additionalJumpAvailable;
+  directions.forEach(({ rowDir, colDir }) => {
+    if (isKing) {
+      for (let i = 1; i < 8; i++) {
+        const intermediateRow = targetRow + i * rowDir;
+        const intermediateCol = targetCol + i * colDir;
+        const nextRow = intermediateRow + rowDir;
+        const nextCol = intermediateCol + colDir;
+        if (
+          !isValidSquare(intermediateRow, intermediateCol) ||
+          !isValidSquare(nextRow, nextCol)
+        ) {
+          break;
+        }
+        additionalJumpAvailable =
+          checkJumpMove(
+            targetRow,
+            targetCol,
+            intermediateRow,
+            intermediateCol,
+            nextRow,
+            nextCol,
+            color
+          ) || additionalJumpAvailable;
+      }
+    } else {
+      additionalJumpAvailable =
+        checkJumpMove(
+          targetRow,
+          targetCol,
+          targetRow + rowDir,
+          targetCol + colDir,
+          targetRow + 2 * rowDir,
+          targetCol + 2 * colDir,
+          color
+        ) || additionalJumpAvailable;
+    }
   });
 
   if (!additionalJumpAvailable) {
