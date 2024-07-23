@@ -1,17 +1,37 @@
-version: "3"
+version: "3.8"
 
 services:
-  # PostgreSQL database
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: postgre
-      POSTGRES_PASSWORD: $PASSWORD
-      POSTGRES_DB: checkers
+  app:
+    build: ./
+    working_dir: /app
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "${PORT}:3000"
+    environment:
+      - PORT=${PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+    command: >
+      sh -c "npm install && node app.js"
+    depends_on:
+      - database
+
+  database:
+    build:
+      context: ./PostgreSQL
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
 
 volumes:
-  postgres_data:
+  pgdata:
