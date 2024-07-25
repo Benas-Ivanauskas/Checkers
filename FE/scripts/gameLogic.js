@@ -202,12 +202,15 @@ function checkKingPromotion(piece, row) {
     (piece.classList.contains("white") && row === 0)
   ) {
     piece.classList.add("king");
+    piece.dataset.type = "king";
     if (piece.classList.contains("black")) {
       piece.style.backgroundColor = "red";
     } else if (piece.classList.contains("white")) {
       piece.style.backgroundColor = "gold";
     }
+    return true;
   }
+  return false;
 }
 
 function endTurn() {
@@ -220,7 +223,9 @@ function endTurn() {
   initializePieceEventListeners();
   setMoveNumber(moveNumber + 1);
 
-  updateGame(gameId, getBoardState(), currentPlayer, moveNumber)
+  const updatedBoardState = getBoardState();
+
+  updateGame(gameId, updatedBoardState, currentPlayer, moveNumber)
     .then((updateGameStateOnTheServer) => {
       displayLastMoveTimestamp(updateGameStateOnTheServer.game.timestamp);
     })

@@ -33,9 +33,19 @@ function initializeCheckersBoard(boardState) {
       checkerBoard.appendChild(square);
 
       // Add pieces based on boardState
-      const pieceColor = boardState[row][col];
-      if (pieceColor) {
-        const piece = createPiece(pieceColor);
+      const pieceData = boardState[row][col];
+      if (pieceData) {
+        let piece;
+        if (typeof pieceData === "string") {
+          if (pieceData.includes("_king")) {
+            const [color, _] = pieceData.split("_");
+            piece = createPiece({ color, isKing: true });
+          } else {
+            piece = createPiece(pieceData);
+          }
+        } else {
+          piece = createPiece(pieceData);
+        }
         square.appendChild(piece);
         addPieceClickListener(piece);
       }
@@ -45,12 +55,30 @@ function initializeCheckersBoard(boardState) {
   updateStatus();
 }
 
-function createPiece(color) {
+function createPiece(pieceData) {
   const piece = document.createElement("div");
-  piece.classList.add("piece", color);
-  if (color === "black" || color === "white") {
+  piece.classList.add("piece");
+
+  if (typeof pieceData === "string") {
+    // Handle the case where pieceData is a string ("black" or "white")
+    piece.classList.add(pieceData);
     piece.dataset.type = "normal";
+  } else if (typeof pieceData === "object") {
+    // Handle the case where pieceData is an object
+    piece.classList.add(pieceData.color);
+    if (pieceData.isKing) {
+      piece.classList.add("king");
+      piece.dataset.type = "king";
+      if (pieceData.color === "black") {
+        piece.style.backgroundColor = "red";
+      } else {
+        piece.style.backgroundColor = "gold";
+      }
+    } else {
+      piece.dataset.type = "normal";
+    }
   }
+
   return piece;
 }
 
@@ -188,10 +216,10 @@ function getBoardState() {
     for (let col = 0; col < 8; col++) {
       const square = squares[row * 8 + col];
       if (square.children.length > 0) {
-        const color = square.children[0].classList.contains("black")
-          ? "black"
-          : "white";
-        boardState[row][col] = color;
+        const piece = square.children[0];
+        const color = piece.classList.contains("black") ? "black" : "white";
+        const isKing = piece.classList.contains("king");
+        boardState[row][col] = isKing ? `${color}_king` : color;
       } else {
         boardState[row][col] = null;
       }
